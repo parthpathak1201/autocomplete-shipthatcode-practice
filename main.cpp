@@ -1,6 +1,11 @@
 #include <string>
 #include <iostream>
 #include <set>
+#include <memory>
+#include <vector>
+#include <unordered_set>
+#include <unordered_map>
+
 //#include <bits/stdc++.h>
 
 
