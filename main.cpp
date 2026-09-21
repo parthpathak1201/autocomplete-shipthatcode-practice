@@ -48,22 +48,24 @@ public:
         //we are at the end.
         cursor->end = true;
         cursor->frequency++;
-        std::cout << "OK" << "\n";
+
+        //std::cout << "OK" << "\n";
     }
 
-    void find(const std::string &word) const {
+    bool find(const std::string &word) const {
         auto cursor = root.get();
         for (const auto &c: word) {
             const size_t index = c - 'a';
             if (!cursor->children[index]) {
                 std::cout << "0\n";
-                return;
+                return false;
             }
             cursor = cursor->children[index].get();
         }
 
         //we are at the end.
         (cursor->end) ? std::cout << cursor->frequency << "\n" : std::cout << "0\n";
+        return true;
     }
 
     void dfs(const Node *cursor, std::string &trail, std::vector<std::string> &words) {
@@ -80,6 +82,7 @@ public:
             }
         }
     }
+
 
     void prefix(const std::string &pre) {
         auto cursor = root.get();
@@ -102,6 +105,69 @@ public:
                 std::cout << pre + word << "\n";
             }
         }
+    }
+
+    void del(const std::string &word) {
+        // Optional safety check: check if it exists first
+        deleteHelper(root.get(), word, 0);
+    }
+
+    // Returns true if the current node can be safely deleted by its parent
+    bool deleteHelper(Node *cursor, const std::string &word, size_t depth) {
+        // Base case: reached the end of the word
+        if (depth == word.length()) {
+            if (!cursor->end) return false; // Word doesn't exist
+
+            cursor->end = false;
+            cursor->frequency = 0;
+
+            // Remove from global nodes tracking set if you use it
+            nodes.erase(cursor);
+
+            // Return true if this node has no children, meaning it can be deleted
+            return hasNoChildren(cursor);
+        }
+
+        size_t index = word[depth] - 'a';
+        if (!cursor->children[index]) {
+            return false; // Word not found
+        }
+
+        // Recurse down
+        bool shouldDeleteChild = deleteHelper(cursor->children[index].get(), word, depth + 1);
+
+        if (shouldDeleteChild) {
+            // Reset/destroy the unique_ptr, freeing the node
+            nodes.erase(cursor->children[index].get());
+            cursor->children[index].reset();
+
+            // Return true if current node is also safe to delete (not an end of another word and has no other children)
+            return !cursor->end && hasNoChildren(cursor);
+        }
+
+        return false;
+    }
+
+    bool hasNoChildren(const Node *node) const {
+        for (const auto &child: node->children) {
+            if (child) return false;
+        }
+        return true;
+    }
+
+    void contains(const std::string &word) const {
+        auto cursor = root.get();
+        for (const auto &c: word) {
+            const size_t index = c - 'a';
+            if (!cursor->children[index]) {
+                std::cout << "NO\n";
+                return;
+            }
+            cursor = cursor->children[index].get();
+        }
+
+        //we are at the end.
+        (cursor->end) ? std::cout << "YES" << "\n" : std::cout << "NO\n";
     }
 };
 
@@ -132,6 +198,10 @@ int main() {
             trie.find(tokens[1]);
         } else if (tokens[0] == "PREFIX") {
             trie.prefix(tokens[1]);
+        } else if (tokens[0] == "DELETE") {
+            trie.del(tokens[1]);
+        } else if (tokens[0] == "CONTAINS") {
+            trie.contains(tokens[1]);
         }
     }
 }
