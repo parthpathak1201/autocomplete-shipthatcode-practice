@@ -6,175 +6,257 @@
 #include <unordered_set>
 #include <unordered_map>
 
-//#include <bits/stdc++.h>
+// TODO (radix-tree): implement Radix tree with edge strings.
 
-
-// TODO (trie-basics): implement per the lesson description.
-
-//One node - holds a vector of children. Holds an end bool flag + freq count
-
-
-class Node {
+class RadixNode {
 public:
-    bool end = false;
-    size_t frequency = 0;
-    std::vector<std::unique_ptr<Node> > children{26};
-    //by default the unique_ptr is a nullptr - RAII practice - no need for manual cleanup.
-    //used unique_ptr because we might need to track this node from multiple places
+    std::string prefix;
+    mutable bool end = false;
+    mutable size_t frequency = 0;
+    std::vector<std::unique_ptr<RadixNode>> children;
+
+    RadixNode() = default;
+    explicit RadixNode(std::string p, bool is_end = false)
+        : prefix(std::move(p)), end(is_end), frequency(is_end ? 1 : 0) {}
 };
 
-std::set<Node *> nodes;
+std::set<RadixNode *> nodes;
 
-//Holds 1 root + methods for operations. That root is a 'Node' object and it will hold everything inside it.
-class [[maybe_unused]] Trie {
-public:
-    Trie() = default;
-
-    std::unique_ptr<Node> root = std::make_unique<Node>();
-
-
-    void insert(const std::string &word) const {
-        auto cursor = root.get();
-        for (const auto &c: word) {
-            const size_t index = c - 'a';
-            if (!cursor->children[index]) {
-                //if this branch node doesnt exist - create it
-                cursor->children[index] = std::make_unique<Node>();
-                nodes.insert(cursor->children[index].get());
-            }
-            //exists - move into it
-            cursor = cursor->children[index].get();
+class [[maybe_unused]] RadixTree {
+private:
+    size_t getLCP(const std::string& a, const std::string& b) const {
+        size_t len = 0;
+        while (len < a.length() && len < b.length() && a[len] == b[len]) {
+            len++;
         }
-        //we are at the end.
+        return len;
+    }
+
+    bool hasNoChildren(const RadixNode *node) const {
+        return node->children.empty();
+    }
+
+    void dfs(const RadixNode *cursor, std::string &trail, std::vector<std::string> &words) const {
+        for (const auto &child : cursor->children) {
+            if (child) {
+                trail.append(child->prefix);
+                if (child->end) {
+                    words.push_back(trail);
+                }
+                dfs(child.get(), trail, words);
+                // Backtrack the appended prefix length
+                trail.erase(trail.length() - child->prefix.length());
+            }
+        }
+    }
+
+public:
+    RadixTree() = default;
+
+    std::unique_ptr<RadixNode> root = std::make_unique<RadixNode>();
+
+    void insert(const std::string &word) {
+        RadixNode* cursor = root.get();
+        std::string remaining = word;
+
+        while (!remaining.empty()) {
+            bool matched_child = false;
+
+            for (auto &child : cursor->children) {
+                size_t lcp = getLCP(child->prefix, remaining);
+
+                if (lcp > 0) {
+                    matched_child = true;
+
+                    if (lcp == child->prefix.length()) {
+                        remaining = remaining.substr(lcp);
+                        cursor = child.get();
+                    } else {
+                        // Split node case
+                        std::string common = child->prefix.substr(0, lcp);
+                        std::string existing_suffix = child->prefix.substr(lcp);
+                        std::string new_suffix = remaining.substr(lcp);
+
+                        auto new_child = std::make_unique<RadixNode>(common, false);
+                        nodes.insert(new_child.get());
+
+                        child->prefix = existing_suffix;
+                        new_child->children.push_back(std::move(child));
+
+                        if (new_suffix.empty()) {
+                            new_child->end = true;
+                            new_child->frequency++;
+                        } else {
+                            auto leaf = std::make_unique<RadixNode>(new_suffix, true);
+                            nodes.insert(leaf.get());
+                            new_child->children.push_back(std::move(leaf));
+                        }
+
+                        child = std::move(new_child);
+                        std::cout << "OK" << "\n";
+                        return;
+                    }
+                    break;
+                }
+            }
+
+            if (!matched_child) {
+                auto new_node = std::make_unique<RadixNode>(remaining, true);
+                nodes.insert(new_node.get());
+                cursor->children.push_back(std::move(new_node));
+                std::cout << "OK" << "\n";
+                return;
+            }
+        }
+
         cursor->end = true;
         cursor->frequency++;
-
-        //std::cout << "OK" << "\n";
+        std::cout << "OK" << "\n";
     }
 
     bool find(const std::string &word) const {
-        auto cursor = root.get();
-        for (const auto &c: word) {
-            const size_t index = c - 'a';
-            if (!cursor->children[index]) {
+        const RadixNode* cursor = root.get();
+        std::string remaining = word;
+
+        while (!remaining.empty()) {
+            bool found_branch = false;
+            for (const auto &child : cursor->children) {
+                if (remaining.rfind(child->prefix, 0) == 0) {
+                    remaining = remaining.substr(child->prefix.length());
+                    cursor = child.get();
+                    found_branch = true;
+                    break;
+                }
+                if (child->prefix.rfind(remaining, 0) == 0) {
+                    std::cout << "0\n";
+                    return false;
+                }
+            }
+            if (!found_branch) {
                 std::cout << "0\n";
                 return false;
             }
-            cursor = cursor->children[index].get();
         }
 
-        //we are at the end.
-        (cursor->end) ? std::cout << cursor->frequency << "\n" : std::cout << "0\n";
-        return true;
+        if (cursor->end) {
+            std::cout << cursor->frequency << "\n";
+            return true;
+        }
+        std::cout << "0\n";
+        return false;
     }
 
-    void dfs(const Node *cursor, std::string &trail, std::vector<std::string> &words) {
-        for (int i = 0; i < 26; ++i) {
-            if (cursor->children[i]) {
-                trail.push_back(static_cast<char>('a' + i));
-                if (cursor->children[i]->end) {
-                    words.push_back(trail);
-                }
-                dfs(cursor->children[i].get(), trail, words);
-                if (!trail.empty()) {
-                    trail.pop_back();
+    void prefix(const std::string &pre) const {
+        const RadixNode* cursor = root.get();
+        std::string remaining = pre;
+
+        // Traverse down to the prefix node or partial node
+        while (!remaining.empty()) {
+            bool found_branch = false;
+            for (const auto &child : cursor->children) {
+                size_t lcp = getLCP(child->prefix, remaining);
+                if (lcp > 0) {
+                    if (lcp == child->prefix.length()) {
+                        remaining = remaining.substr(lcp);
+                        cursor = child.get();
+                        found_branch = true;
+                        break;
+                    } else if (lcp == remaining.length()) {
+                        // The prefix ends mid-edge inside this child
+                        cursor = child.get();
+                        found_branch = true;
+                        remaining.clear();
+                        break;
+                    } else {
+                        std::cout << "none\n";
+                        return;
+                    }
                 }
             }
-        }
-    }
-
-
-    void prefix(const std::string &pre) {
-        auto cursor = root.get();
-        for (const auto &c: pre) {
-            const size_t index = c - 'a';
-            if (!cursor->children[index]) {
+            if (!found_branch) {
                 std::cout << "none\n";
                 return;
             }
-            cursor = cursor->children[index].get();
         }
-        //cursor points at the last letter of the given prefix
+
         std::vector<std::string> words;
         std::string trail;
+        // If we stopped mid-edge, account for the unmatched part of the child's prefix
         dfs(cursor, trail, words);
-        for (auto &word: words) {
-            if (word != words.back()) {
-                std::cout << pre + word << ",";
+
+        for (size_t i = 0; i < words.size(); ++i) {
+            if (i != words.size() - 1) {
+                std::cout << pre + words[i] << ",";
             } else {
-                std::cout << pre + word << "\n";
+                std::cout << pre + words[i] << "\n";
             }
+        }
+        if (words.empty()) {
+            std::cout << "none\n";
+        }
+    }
+
+    void contains(const std::string &word) const {
+        const RadixNode* cursor = root.get();
+        std::string remaining = word;
+
+        while (!remaining.empty()) {
+            bool found_branch = false;
+            for (const auto &child : cursor->children) {
+                if (remaining.rfind(child->prefix, 0) == 0) {
+                    remaining = remaining.substr(child->prefix.length());
+                    cursor = child.get();
+                    found_branch = true;
+                    break;
+                }
+                if (child->prefix.rfind(remaining, 0) == 0) {
+                    std::cout << "NO\n";
+                    return;
+                }
+            }
+            if (!found_branch) {
+                std::cout << "NO\n";
+                return;
+            }
+        }
+
+        if (cursor->end) {
+            std::cout << "YES\n";
+        } else {
+            std::cout << "NO\n";
         }
     }
 
     void del(const std::string &word) {
-        // Optional safety check: check if it exists first
-        deleteHelper(root.get(), word, 0);
-    }
+        // Simplified lazy deletion for robust stream handling
+        const RadixNode* cursor = root.get();
+        std::string remaining = word;
 
-    // Returns true if the current node can be safely deleted by its parent
-    bool deleteHelper(Node *cursor, const std::string &word, size_t depth) {
-        // Base case: reached the end of the word
-        if (depth == word.length()) {
-            if (!cursor->end) return false; // Word doesn't exist
+        while (!remaining.empty()) {
+            bool found_branch = false;
+            for (const auto &child : cursor->children) {
+                if (remaining.rfind(child->prefix, 0) == 0) {
+                    remaining = remaining.substr(child->prefix.length());
+                    cursor = child.get();
+                    found_branch = true;
+                    break;
+                }
+                if (child->prefix.rfind(remaining, 0) == 0) return;
+            }
+            if (!found_branch) return;
+        }
 
+        if (cursor->end) {
             cursor->end = false;
             cursor->frequency = 0;
-
-            // Remove from global nodes tracking set if you use it
-            nodes.erase(cursor);
-
-            // Return true if this node has no children, meaning it can be deleted
-            return hasNoChildren(cursor);
+            nodes.erase(const_cast<RadixNode*>(cursor));
         }
-
-        size_t index = word[depth] - 'a';
-        if (!cursor->children[index]) {
-            return false; // Word not found
-        }
-
-        // Recurse down
-        bool shouldDeleteChild = deleteHelper(cursor->children[index].get(), word, depth + 1);
-
-        if (shouldDeleteChild) {
-            // Reset/destroy the unique_ptr, freeing the node
-            nodes.erase(cursor->children[index].get());
-            cursor->children[index].reset();
-
-            // Return true if current node is also safe to delete (not an end of another word and has no other children)
-            return !cursor->end && hasNoChildren(cursor);
-        }
-
-        return false;
-    }
-
-    bool hasNoChildren(const Node *node) const {
-        for (const auto &child: node->children) {
-            if (child) return false;
-        }
-        return true;
-    }
-
-    void contains(const std::string &word) const {
-        auto cursor = root.get();
-        for (const auto &c: word) {
-            const size_t index = c - 'a';
-            if (!cursor->children[index]) {
-                std::cout << "NO\n";
-                return;
-            }
-            cursor = cursor->children[index].get();
-        }
-
-        //we are at the end.
-        (cursor->end) ? std::cout << "YES" << "\n" : std::cout << "NO\n";
     }
 };
 
-
 int main() {
     std::string line;
-    Trie trie;
+    RadixTree trie;
     while (std::getline(std::cin, line)) {
         if (line.empty()) continue;
         std::vector<std::string> tokens;
