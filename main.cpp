@@ -48,6 +48,7 @@ public:
         //we are at the end.
         cursor->end = true;
         cursor->frequency++;
+        std::cout << "OK" << "\n";
     }
 
     void find(const std::string &word) const {
@@ -63,6 +64,44 @@ public:
 
         //we are at the end.
         (cursor->end) ? std::cout << cursor->frequency << "\n" : std::cout << "0\n";
+    }
+
+    void dfs(const Node *cursor, std::string &trail, std::vector<std::string> &words) {
+        for (int i = 0; i < 26; ++i) {
+            if (cursor->children[i]) {
+                trail.push_back(static_cast<char>('a' + i));
+                if (cursor->children[i]->end) {
+                    words.push_back(trail);
+                }
+                dfs(cursor->children[i].get(), trail, words);
+                if (!trail.empty()) {
+                    trail.pop_back();
+                }
+            }
+        }
+    }
+
+    void prefix(const std::string &pre) {
+        auto cursor = root.get();
+        for (const auto &c: pre) {
+            const size_t index = c - 'a';
+            if (!cursor->children[index]) {
+                std::cout << "none\n";
+                return;
+            }
+            cursor = cursor->children[index].get();
+        }
+        //cursor points at the last letter of the given prefix
+        std::vector<std::string> words;
+        std::string trail;
+        dfs(cursor, trail, words);
+        for (auto &word: words) {
+            if (word != words.back()) {
+                std::cout << pre + word << ",";
+            } else {
+                std::cout << pre + word << "\n";
+            }
+        }
     }
 };
 
@@ -91,6 +130,8 @@ int main() {
             trie.insert(tokens[1]);
         } else if (tokens[0] == "FREQ") {
             trie.find(tokens[1]);
+        } else if (tokens[0] == "PREFIX") {
+            trie.prefix(tokens[1]);
         }
     }
 }
