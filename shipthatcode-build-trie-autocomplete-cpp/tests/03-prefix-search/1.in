@@ -1,0 +1,7 @@
+INSERT cat
+INSERT car
+INSERT cart
+INSERT dog
+PREFIX ca
+PREFIX d
+PREFIX z

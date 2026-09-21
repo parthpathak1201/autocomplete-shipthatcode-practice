@@ -1,0 +1,7 @@
+INSERT cat
+INSERT car
+INSERT cart
+INSERT bat
+INSERT bar
+FUZZY cat 1
+FUZZY cot 1

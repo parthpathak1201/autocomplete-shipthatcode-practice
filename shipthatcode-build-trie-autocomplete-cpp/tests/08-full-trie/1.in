@@ -1,0 +1,11 @@
+INSERT_N java 10
+INSERT_N javascript 8
+INSERT_N jam 3
+INSERT_N jacket 5
+INSERT_N jam 2
+SUGGEST ja 3
+DELETE java
+SUGGEST ja 3
+FUZZY jam 1
+DELETE jam
+FUZZY jam 1

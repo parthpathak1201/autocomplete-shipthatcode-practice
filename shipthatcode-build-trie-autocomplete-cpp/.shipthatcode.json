@@ -1,0 +1,42 @@
+{
+  "course": "build-trie-autocomplete",
+  "language": "cpp",
+  "language_id": 54,
+  "entrypoint": "main.cpp",
+  "version": 1,
+  "content_hash": "a845adab09853789",
+  "lessons": [
+    {
+      "slug": "trie-basics",
+      "tests_hash": "41ae5507ae2b"
+    },
+    {
+      "slug": "node-structure",
+      "tests_hash": "aa2fe57f0140"
+    },
+    {
+      "slug": "prefix-search",
+      "tests_hash": "ccd3c1f6f3e5"
+    },
+    {
+      "slug": "delete",
+      "tests_hash": "74c0f9d1b4ae"
+    },
+    {
+      "slug": "radix-tree",
+      "tests_hash": "b8691e46422c"
+    },
+    {
+      "slug": "autocomplete",
+      "tests_hash": "54b18330d5ce"
+    },
+    {
+      "slug": "fuzzy",
+      "tests_hash": "706a27c71fd2"
+    },
+    {
+      "slug": "full-trie",
+      "tests_hash": "40ce302e5919"
+    }
+  ]
+}
