@@ -219,6 +219,13 @@ public:
         MinHeap pq;
         std::string trail;
 
+        if (cursor->end) {
+            pq.emplace(cursor->frequency, pre);
+            if (pq.size() > k) {
+                pq.pop();
+            }
+        }
+
         // start DFS from the end of the prefix node
         dfsK(cursor, trail, pq, k, pre);
 
@@ -254,7 +261,7 @@ public:
         }
         // set the terminal state and frequency explicitly
         cursor->end = true;
-        cursor->frequency = freq; // set directly instead of just ++
+        cursor->frequency += freq;
     }
 
     void fuzzyDfs(const Node *cursor, const std::string &query, size_t maxDistance,

@@ -9,3 +9,6 @@ SUGGEST ja 3
 FUZZY jam 1
 DELETE jam
 FUZZY jam 1
+DELETE ghost
+INSERT_N x 1
+SUGGEST x 10
