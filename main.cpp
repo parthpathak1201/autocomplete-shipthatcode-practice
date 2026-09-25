@@ -16,14 +16,14 @@
 
 // TODO (trie-basics): implement per the lesson description.
 
-//One node - holds a vector of children. Holds an end bool flag + freq count
+//one node - holds a vector of children. Holds an end bool flag + freq count
 
 struct Compare {
     bool operator()(const std::pair<size_t, std::string> &a, const std::pair<size_t, std::string> &b) {
         if (a.first == b.first) {
-            return a.second < b.second; // Alphabetical tie-breaker (lexicographically larger at top to pop it first)
+            return a.second < b.second; // alphabetical tie-breaker (lexicographically larger at top to pop it first)
         }
-        return a.first > b.first; // Min-heap based on frequency
+        return a.first > b.first; // min-heap based on frequency
     }
 };
 
@@ -42,7 +42,7 @@ public:
 
 std::set<Node *> nodes;
 
-//Holds 1 root + methods for operations. That root is a 'Node' object and it will hold everything inside it.
+//holds 1 root + methods for operations. That root is a 'Node' object and it will hold everything inside it.
 class [[maybe_unused]] Trie {
 public:
     Trie() = default;
@@ -125,40 +125,40 @@ public:
     }
 
     void del(const std::string &word) {
-        // Optional safety check: check if it exists first
+        // optional safety check: check if it exists first
         deleteHelper(root.get(), word, 0);
     }
 
-    // Returns true if the current node can be safely deleted by its parent
+    // returns true if the current node can be safely deleted by its parent
     bool deleteHelper(Node *cursor, const std::string &word, size_t depth) {
-        // Base case: reached the end of the word
+        // base case: reached the end of the word
         if (depth == word.length()) {
             if (!cursor->end) return false; // Word doesn't exist
 
             cursor->end = false;
             cursor->frequency = 0;
 
-            // Remove from global nodes tracking set if you use it
+            // remove from global nodes tracking set if you use it
             nodes.erase(cursor);
 
-            // Return true if this node has no children, meaning it can be deleted
+            // return true if this node has no children, meaning it can be deleted
             return hasNoChildren(cursor);
         }
 
         size_t index = word[depth] - 'a';
         if (!cursor->children[index]) {
-            return false; // Word not found
+            return false; // word not found
         }
 
-        // Recurse down
+        // recurse down
         bool shouldDeleteChild = deleteHelper(cursor->children[index].get(), word, depth + 1);
 
         if (shouldDeleteChild) {
-            // Reset/destroy the unique_ptr, freeing the node
+            // reset/destroy the unique_ptr, freeing the node
             nodes.erase(cursor->children[index].get());
             cursor->children[index].reset();
 
-            // Return true if current node is also safe to delete (not an end of another word and has no other children)
+            // return true if current node is also safe to delete (not an end of another word and has no other children)
             return !cursor->end && hasNoChildren(cursor);
         }
 
@@ -183,7 +183,7 @@ public:
             cursor = cursor->children[index].get();
         }
 
-        //we are at the end.
+        //we are at the end
         (cursor->end) ? std::cout << "YES" << "\n" : std::cout << "NO\n";
     }
 
@@ -211,7 +211,7 @@ public:
             const size_t index = c - 'a';
             if (!cursor->children[index]) {
                 std::cout << "none\n";
-                return; // Prefix doesn't exist in trie
+                return; // prefix doesn't exist in trie
             }
             cursor = cursor->children[index].get();
         }
@@ -219,7 +219,7 @@ public:
         MinHeap pq;
         std::string trail;
 
-        // Start DFS from the end of the prefix node
+        // start DFS from the end of the prefix node
         dfsK(cursor, trail, pq, k, pre);
 
         std::vector<std::pair<size_t, std::string> > words;
@@ -249,12 +249,12 @@ public:
                 cursor->children[index] = std::make_unique<Node>();
                 nodes.insert(cursor->children[index].get());
             }
-            // Move into it
+            // move into it
             cursor = cursor->children[index].get();
         }
-        // Set the terminal state and frequency explicitly
+        // set the terminal state and frequency explicitly
         cursor->end = true;
-        cursor->frequency = freq; // Set directly instead of just ++
+        cursor->frequency = freq; // set directly instead of just ++
     }
 };
 
