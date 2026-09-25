@@ -256,6 +256,56 @@ public:
         cursor->end = true;
         cursor->frequency = freq; // set directly instead of just ++
     }
+
+    void fuzzyDfs(const Node *cursor, const std::string &query, size_t maxDistance,
+                  const std::vector<size_t> &row, std::string &trail,
+                  std::vector<std::string> &matches) const {
+        for (size_t i = 0; i < cursor->children.size(); ++i) {
+            if (!cursor->children[i]) continue;
+
+            std::vector<size_t> nextRow(query.size() + 1);
+            nextRow[0] = row[0] + 1;
+            size_t minDistance = nextRow[0];
+            for (size_t j = 1; j <= query.size(); ++j) {
+                const size_t cost = query[j - 1] == static_cast<char>('a' + i) ? 0 : 1;
+                nextRow[j] = std::min({nextRow[j - 1] + 1, row[j] + 1, row[j - 1] + cost});
+                minDistance = std::min(minDistance, nextRow[j]);
+            }
+
+            if (minDistance > maxDistance) continue;
+
+            trail.push_back(static_cast<char>('a' + i));
+            if (cursor->children[i]->end && nextRow.back() <= maxDistance) {
+                matches.push_back(trail + "(" + std::to_string(nextRow.back()) + ")");
+            }
+            fuzzyDfs(cursor->children[i].get(), query, maxDistance, nextRow, trail, matches);
+            trail.pop_back();
+        }
+    }
+
+    void fuzzy(const std::string &query, int maxDistance) const {
+        if (maxDistance < 0) {
+            std::cout << "none\n";
+            return;
+        }
+
+        std::vector<size_t> row(query.size() + 1);
+        for (size_t i = 0; i <= query.size(); ++i) row[i] = i;
+
+        std::vector<std::string> matches;
+        std::string trail;
+        fuzzyDfs(root.get(), query, static_cast<size_t>(maxDistance), row, trail, matches);
+
+        if (matches.empty()) {
+            std::cout << "none\n";
+            return;
+        }
+        for (size_t i = 0; i < matches.size(); ++i) {
+            if (i > 0) std::cout << ",";
+            std::cout << matches[i];
+        }
+        std::cout << "\n";
+    }
 };
 
 
@@ -295,6 +345,8 @@ int main() {
             if (tokens.size() >= 3) {
                 trie.insertN(tokens[1], std::stoul(tokens[2]));
             }
+        } else if (tokens[0] == "FUZZY") {
+            trie.fuzzy(tokens[1], std::stoi(tokens[2]));
         }
     }
 }
